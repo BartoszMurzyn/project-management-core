@@ -1,0 +1,1 @@
+export DB_URL="postgresql+asyncpg://postgres:python@localhost:5432/project_management"
