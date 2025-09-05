@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from project_management_core.infrastructure.config import DB_URL
 
-def get_async_engine(db_url):
+def get_async_engine():
     return create_async_engine(DB_URL)
 
 def get_async_session_maker():

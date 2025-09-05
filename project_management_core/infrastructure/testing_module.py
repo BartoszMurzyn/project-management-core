@@ -1,8 +1,8 @@
 from project_management_core.infrastructure.config import DB_URL
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from project_management_core.infrastructure.models.db_models import Base, User
-from project_management_core.infrastructure.repository.db_repository import AsyncRepository
+from project_management_core.infrastructure.repositories.db.models.db_models import Base, User
+from project_management_core.infrastructure.repositories.db.db_repository import AsyncRepository
 import asyncio
 
 

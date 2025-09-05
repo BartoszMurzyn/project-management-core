@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 from project_management_core.domain.entities.project import Project
 
 
@@ -10,7 +9,7 @@ class ProjectRepository(ABC):
         pass      
 
     @abstractmethod
-    def get_by_id(self, project_id: int) -> Optional[Project]:
+    def get_by_id(self, project_id: str) -> Project | None:
         pass
 
     @abstractmethod

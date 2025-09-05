@@ -1,9 +1,22 @@
-import select
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from project_management_core.domain.repositories.project_repository import ProjectRepository
 from project_management_core.domain.entities.project import Project
 from typing import Optional
 from project_management_core.infrastructure.repositories.db.models.db_models import ProjectModel
+
+class RepositoryError(Exception):
+    pass
+
+class ProjectNotFoundError(RepositoryError):
+      """Project not found in database."""
+
+class ProjectRepositoryError(RepositoryError):
+    """Problem with saving/loading user from database."""
+
+class ProjectDataIntegrityError(RepositoryError):
+    """Constraints validation"""
 
 
 class ProjectRepositoryImpl(ProjectRepository):
@@ -18,9 +31,15 @@ class ProjectRepositoryImpl(ProjectRepository):
             description = project.description,
             owner_id = project.owner_id,
         )
-        self.session.add(orm_project)
-        await self.session.commit()
-        await self.session.refresh(orm_project)
+        try:
+            self.session.add(orm_project)
+            await self.session.commit()
+            await self.session.refresh(orm_project)
+        except SQLAlchemyError:
+            await self.session.rollback()
+            raise RepositoryError("Unable to create project.")
+        except IntegrityError as e:
+            raise ProjectDataIntegrityError(f"Integrity error: {e}")
 
         return Project(
             id = orm_project.id,
@@ -33,7 +52,8 @@ class ProjectRepositoryImpl(ProjectRepository):
     async def get_by_id(self, project_id: int) -> Optional[Project]:
         result = await self.session.get(ProjectModel, project_id)
         if result is None:
-            return None
+            raise ProjectNotFoundError("Project not found")
+
         return Project(
             id = result.id,
             name = result.name,
@@ -46,6 +66,8 @@ class ProjectRepositoryImpl(ProjectRepository):
         project_query = select(ProjectModel).where(ProjectModel.owner_id == user_id)
         result = await self.session.execute(project_query)
         rows = result.scalars().all()
+        if not rows:
+            raise ProjectNotFoundError(f"No projects found for user: {user_id}")
         projects = []
         for row in rows:
             projects.append(
@@ -60,21 +82,26 @@ class ProjectRepositoryImpl(ProjectRepository):
     async def update(self, project: Project) -> Project:
         result = await self.session.get(ProjectModel, project.id) 
         if result is None:
-            return None
-        result.name = project.name
-        result.description = project.description
-        await self.session.commit()
-        await self.session.refresh(result)
+            raise ProjectNotFoundError("Project not found")
+        try:
+            result.name = project.name
+            result.description = project.description
+            await self.session.commit()
+            await self.session.refresh(result)
+        except SQLAlchemyError as e:
+            raise ProjectRepositoryError(f"Could not update project {project.id}: {e}")
 
         return Project(
             id = result.id,
             name = result.name,
-            description = result.description
+            description = result.description,
+            owner_id= result.owner_id
         )
 
     async def delete(self, project_id: int) -> None:
-        result = await self.session.get(ProjectModel, project_id)
-        if result is None:
-            return 
-        await self.session.delete(result)
-        await self.session.commit()
+        try:
+            result = await self.session.get(ProjectModel, project_id)
+            await self.session.delete(result)
+            await self.session.commit()
+        except SQLAlchemyError:
+            raise RepositoryError("Unable to delete project.")

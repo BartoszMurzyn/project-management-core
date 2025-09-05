@@ -1,11 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-
 class AsyncRepository:
-    def __init__(self, model):
+    def __init__(self, model, session: AsyncSession):
         self.model = model
+        self.session = session
     
-    async def create(self,session: AsyncSession,  obj_in: dict):
+    async def create(self,session,  obj_in: dict):
         obj = self.model(**obj_in)
         session.add(obj)
         await session.commit()
