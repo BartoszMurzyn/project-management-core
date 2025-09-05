@@ -1,0 +1,5 @@
+# Runtime dependencies
+SQLAlchemy>=2.0,<3
+pydantic>=2.0,<3
+bcrypt>=4.0,<5
+asyncpg>=0.29,<1
