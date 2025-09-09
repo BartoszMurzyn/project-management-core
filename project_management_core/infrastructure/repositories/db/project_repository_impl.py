@@ -106,34 +106,55 @@ class ProjectRepositoryImpl(ProjectRepository):
         )
     
     async def add_user_to_project(self, project_id: int, user_id: int) -> Project:
-        """Add a single user to a project as a participant."""
-        project_result = await self.session.get(ProjectModel, project_id, options=[selectinload(ProjectModel.members)])
+        """
+        Add a single user to a project as a participant.
+        Existing members are preserved. Project owner cannot be added.
+        """
+
+        # 1️⃣ Fetch the project
+        project_result = await self.session.get(ProjectModel, project_id)
         if not project_result:
             raise ProjectNotFoundError("Project not found")
-        
-        # Check if user is already a participant
-        for member in project_result.members:
-            if member.user_id == user_id:
-                raise ProjectDataIntegrityError(f"User {user_id} is already a participant in project {project_id}")
 
+        # 2️⃣ Prevent adding the owner as a participant
         if user_id == project_result.owner_id:
             raise ProjectDataIntegrityError("Project owner cannot be added as participant")
 
+        # 3️⃣ Check if the user is already a participant
+        existing_query = select(ProjectMember).where(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == user_id
+        )
+        existing_result = await self.session.execute(existing_query)
+        existing_member = existing_result.scalar_one_or_none()
+        if existing_member:
+            raise ProjectDataIntegrityError(
+                f"User {user_id} is already a participant in project {project_id}"
+            )
+
+        # 4️⃣ Add the new participant
+        new_member = ProjectMember(
+            project_id=project_id,
+            user_id=user_id,
+            role="participant"
+        )
+        self.session.add(new_member)
+
         try:
-            member = ProjectMember(user_id=user_id, project_id=project_id, role="participant")
-            self.session.add(member)
             await self.session.commit()
-            await self.session.refresh(project_result)  # Refresh to include new member
+            # Refresh the project to get updated members
+            await self.session.refresh(project_result)
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise ProjectRepositoryError(f"Could not add user to project: {e}")
 
+        # 5️⃣ Return project entity with updated participants list
         return Project(
             id=project_result.id,
             name=project_result.name,
             description=project_result.description,
             owner_id=project_result.owner_id,
-            participants=[m.user_id for m in project_result.members]  # Now includes newly added member
+            participants=[m.user_id for m in project_result.members]
         )
 
     async def delete(self, project_id: int) -> None:
