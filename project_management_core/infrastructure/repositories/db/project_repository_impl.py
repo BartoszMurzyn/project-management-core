@@ -108,7 +108,7 @@ class ProjectRepositoryImpl(ProjectRepository):
             raise RepositoryError("Unable to delete project.")
 
 
-async def add_user_to_project(self, project_id: int, user_id: int) -> Project:
+    async def add_user_to_project(self, project_id: int, user_id: int) -> Project:
         """Add a single user to a project as a participant."""
         # Check if project exists
         project_result = await self.session.get(ProjectModel, project_id)
