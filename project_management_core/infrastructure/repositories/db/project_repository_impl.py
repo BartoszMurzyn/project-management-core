@@ -91,12 +91,10 @@ class ProjectRepositoryImpl(ProjectRepository):
             result.description = project.description
 
             if project.participants:
-    # Step 1: await the coroutine to get the result object
-                query_result = await self.session.execute(
-        select(UserModel).where(UserModel.id.in_(project.participants)))
-    
-    # Step 2: call scalars() and all() on the result (no await)
-            result.participants = query_result.scalars().all()
+                result_set = await self.session.execute(
+                select(UserModel).where(UserModel.id.in_(project.participants))
+            )
+            result.participants = result_set.scalars().all()
             
             await self.session.commit()
             await self.session.refresh(result)
