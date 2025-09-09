@@ -3,11 +3,8 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from project_management_core.domain.repositories.project_repository import ProjectRepository
 from project_management_core.domain.entities.project import Project
-from project_management_core.domain.entities.user import User
-
 from typing import Optional
 from project_management_core.infrastructure.repositories.db.models.db_models import ProjectModel
-from project_management_core.infrastructure.repositories.db.models.db_models import UserModel
 
 class RepositoryError(Exception):
     pass
@@ -89,12 +86,6 @@ class ProjectRepositoryImpl(ProjectRepository):
         try:
             result.name = project.name
             result.description = project.description
-
-            if project.participants:
-                result_set = await self.session.execute(
-                select(UserModel).where(UserModel.id.in_(project.participants))
-            )
-                result.participants = result_set.scalars().all()
             
             await self.session.commit()
             await self.session.refresh(result)
@@ -105,8 +96,7 @@ class ProjectRepositoryImpl(ProjectRepository):
             id = result.id,
             name = result.name,
             description = result.description,
-            owner_id= result.owner_id,
-            participants=[u.id for u in result.participants]
+            owner_id= result.owner_id
         )
 
     async def delete(self, project_id: int) -> None:
