@@ -30,7 +30,7 @@ class ProjectMember(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
     role = Column(String(50), nullable=False, default="participant")
-    joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    joined_at = Column(DateTime, default=datetime.now().replace(tzinfo=None))
     __table_args__ = (UniqueConstraint('user_id', 'project_id'),)
     user = relationship("UserModel")
     project = relationship("ProjectModel", back_populates='members')
@@ -45,7 +45,7 @@ class DocumentModel(Base):
     content_type = Column(String(255), nullable = False)
     project_id = Column(Integer, ForeignKey('projects.id'), nullable= False)
     uploaded_by = Column(Integer, ForeignKey('users.id'), nullable=False)
-    uploaded_at = Column(DateTime, default=lambda: datetime.now())
+    uploaded_at = Column(DateTime, default=datetime.now().replace(tzinfo=None))
 
     project = relationship("ProjectModel")
     user = relationship("UserModel")
