@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "project-management-core"
+version = "0.1.0"
+description = "Core domain and infrastructure for Project Management"
+readme = "README.md"
+authors = [{ name = "Your Name" }]
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["project_management_core*"]
+exclude = ["tests*"]
