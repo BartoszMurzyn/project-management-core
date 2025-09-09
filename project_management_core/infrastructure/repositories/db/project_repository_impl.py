@@ -121,11 +121,11 @@ class ProjectRepositoryImpl(ProjectRepository):
             raise ProjectDataIntegrityError("Project owner cannot be added as participant")
 
         # 3️⃣ Check if the user is already a participant
-        existing_query = select(ProjectMember).where(
-            ProjectMember.project_id == project_id,
-            ProjectMember.user_id == user_id
+        existing_result = await self.session.execute(
+            select(ProjectMember)
+            .where(ProjectMember.project_id == project_id)
+            .where(ProjectMember.user_id == user_id)
         )
-        existing_result = await self.session.execute(existing_query)
         existing_member = existing_result.scalar_one_or_none()
         if existing_member:
             raise ProjectDataIntegrityError(
