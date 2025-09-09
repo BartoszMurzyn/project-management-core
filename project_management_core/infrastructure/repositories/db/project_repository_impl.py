@@ -94,7 +94,7 @@ class ProjectRepositoryImpl(ProjectRepository):
                 result_set = await self.session.execute(
                 select(UserModel).where(UserModel.id.in_(project.participants))
             )
-            result.participants = result_set.scalars().all()
+                result.participants = result_set.scalars().all()
             
             await self.session.commit()
             await self.session.refresh(result)
