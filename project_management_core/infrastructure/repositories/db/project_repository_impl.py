@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from project_management_core.domain.repositories.project_repository import ProjectRepository
 from project_management_core.domain.entities.project import Project
 from typing import Optional
-from project_management_core.infrastructure.repositories.db.models.db_models import ProjectModel
+from project_management_core.infrastructure.repositories.db.models.db_models import ProjectModel, ProjectMember
 
 class RepositoryError(Exception):
     pass
@@ -106,3 +106,42 @@ class ProjectRepositoryImpl(ProjectRepository):
             await self.session.commit()
         except SQLAlchemyError:
             raise RepositoryError("Unable to delete project.")
+
+
+async def add_user_to_project(self, project_id: int, user_id: int) -> Project:
+        """Add a single user to a project as a participant."""
+        # Check if project exists
+        project_result = await self.session.get(ProjectModel, project_id)
+        if not project_result:
+            raise ProjectNotFoundError("Project not found")
+        
+        # Check if user is already a participant
+        existing_query = select(ProjectMember).where(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == user_id
+        )
+        existing_result = await self.session.execute(existing_query)
+        existing_member = existing_result.scalar_one_or_none()
+        
+        if existing_member:
+            raise ProjectDataIntegrityError(f"User {user_id} is already a participant in project {project_id}")
+        
+        # Don't add owner as participant
+        if user_id == project_result.owner_id:
+            raise ProjectDataIntegrityError("Project owner cannot be added as participant")
+        
+        try:
+            # Add the new participant
+            member = ProjectMember(
+                user_id=user_id,
+                project_id=project_id,
+                role="participant"
+            )
+            self.session.add(member)
+            await self.session.commit()
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise ProjectRepositoryError(f"Could not add user to project: {e}")
+        
+        # Return the updated project with participants
+        return await self._get_project_with_participants(project_id)
