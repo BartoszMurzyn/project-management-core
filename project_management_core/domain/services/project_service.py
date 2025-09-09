@@ -71,12 +71,18 @@ class ProjectService:
 
     async def add_user_to_project(self, project_id: int, user_id: int, current_user_id: int) -> Project:
         """Add a user to a project. Only project owner can do this."""
-        # Get the project to check ownership
+    # Get the project to check ownership
         project = await self.get_project(project_id)
-        
-        # Check if current user is the owner
+    
+    # Check if current user is the owner
         if not project.has_access(current_user_id):
             raise ProjectAccessDeniedError("Only project owner can add participants")
+    
+    # Use repository method to add user and return the result
+        updated_project = await self.project_repository.add_user_to_project(project_id, user_id)
+    
+    # Make sure we return a valid project
+        if updated_project is None:
+            raise ProjectServiceError("Failed to add user to project")
         
-        # Use repository method to add user
-        return await self.project_repository.add_user_to_project(project_id, user_id)
+        return updated_project
