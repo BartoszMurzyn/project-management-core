@@ -45,20 +45,24 @@ class ProjectRepositoryImpl(ProjectRepository):
             id = orm_project.id,
             name = orm_project.name,
             description = orm_project.description,
-            owner_id = orm_project.owner_id 
+            owner_id = orm_project.owner_id,
+            participants=[m.user_id for m in orm_project.members]
         )
 
     
     async def get_by_id(self, project_id: int) -> Optional[Project]:
         result = await self.session.get(ProjectModel, project_id)
         if result is None:
+            
             raise ProjectNotFoundError("Project not found")
+        
 
         return Project(
             id = result.id,
             name = result.name,
             description = result.description,
-            owner_id = result.owner_id 
+            owner_id = result.owner_id ,
+            participants = [m.user_id for m in result.members]
         )
 
     
@@ -75,7 +79,8 @@ class ProjectRepositoryImpl(ProjectRepository):
             id=row.id,
             name=row.name,
             description=row.description,
-            owner_id=row.owner_id
+            owner_id=row.owner_id,
+            participants = [m.user_id for m in result.members]
         ))
         return projects
     
@@ -96,7 +101,8 @@ class ProjectRepositoryImpl(ProjectRepository):
             id = result.id,
             name = result.name,
             description = result.description,
-            owner_id= result.owner_id
+            owner_id= result.owner_id,
+            participants = [m.user_id for m in result.members]
         )
     
     async def add_user_to_project(self, project_id: int, user_id: int) -> Project:
@@ -132,6 +138,14 @@ class ProjectRepositoryImpl(ProjectRepository):
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise ProjectRepositoryError(f"Could not add user to project: {e}")
+        
+        return Project(
+            id=project_result.id,
+            name=project_result.name,
+            description=project_result.description,
+            owner_id=project_result.owner_id,
+            participants=[m.user_id for m in project_result.members]
+        )
 
     async def delete(self, project_id: int) -> None:
         try:
