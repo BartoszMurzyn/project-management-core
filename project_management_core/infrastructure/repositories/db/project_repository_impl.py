@@ -98,16 +98,7 @@ class ProjectRepositoryImpl(ProjectRepository):
             description = result.description,
             owner_id= result.owner_id
         )
-
-    async def delete(self, project_id: int) -> None:
-        try:
-            result = await self.session.get(ProjectModel, project_id)
-            await self.session.delete(result)
-            await self.session.commit()
-        except SQLAlchemyError:
-            raise RepositoryError("Unable to delete project.")
-
-
+    
     async def add_user_to_project(self, project_id: int, user_id: int) -> Project:
         """Add a single user to a project as a participant."""
         # Check if project exists
@@ -129,7 +120,6 @@ class ProjectRepositoryImpl(ProjectRepository):
         # Don't add owner as participant
         if user_id == project_result.owner_id:
             raise ProjectDataIntegrityError("Project owner cannot be added as participant")
-        
         try:
             # Add the new participant
             member = ProjectMember(
@@ -142,4 +132,11 @@ class ProjectRepositoryImpl(ProjectRepository):
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise ProjectRepositoryError(f"Could not add user to project: {e}")
-        
+
+    async def delete(self, project_id: int) -> None:
+        try:
+            result = await self.session.get(ProjectModel, project_id)
+            await self.session.delete(result)
+            await self.session.commit()
+        except SQLAlchemyError:
+            raise RepositoryError("Unable to delete project.")
