@@ -1,9 +1,15 @@
 from sqlalchemy import select
-from project_management_core.domain.entities.document import Document
-from project_management_core.domain.repositories.document_repository import DocumentRepository
-from project_management_core.infrastructure.repositories.db.models.db_models import DocumentModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from project_management_core.domain.entities.document import Document
+from project_management_core.domain.repositories.document_repository import (
+    DocumentRepository,
+)
+from project_management_core.infrastructure.repositories.db.models.db_models import (
+    DocumentModel,
+)
+
 
 class RepositoryError(Exception):
     pass
@@ -19,10 +25,28 @@ class DocumentDataIntegrityError(RepositoryError):
 
 
 class DocumentRepositoryImpl(DocumentRepository):
+    """SQLAlchemy-based implementation of the `DocumentRepository` interface."""
     def __init__(self, session: AsyncSession):
+        """Initialize the repository with an async database session.
+
+        Args:
+            session: Async SQLAlchemy session.
+        """
         self.session = session
     
     async def create(self, document: Document) -> Document:
+        """Persist a new document and return the stored entity.
+
+        Args:
+            document: Domain document to persist.
+
+        Returns:
+            The created `Document` entity with generated fields populated.
+
+        Raises:
+            DocumentDataIntegrityError: On integrity constraint violations.
+            DocumentRepositoryError: On general database errors.
+        """
         orm_document = DocumentModel(
             id = document.id,
             original_filename = document.original_filename,
@@ -56,6 +80,17 @@ class DocumentRepositoryImpl(DocumentRepository):
         )
     
     async def get_by_id(self, document_id: int) -> Document | None:
+        """Fetch a document by ID.
+
+        Args:
+            document_id: Identifier of the document.
+
+        Returns:
+            The matching `Document` entity.
+
+        Raises:
+            DocumentRecordNotFoundError: If the document does not exist.
+        """
         result = await self.session.get(DocumentModel, document_id)
         if result is None:
             raise DocumentRecordNotFoundError(f"No document found with ID: {document_id}")
@@ -72,6 +107,17 @@ class DocumentRepositoryImpl(DocumentRepository):
         )
 
     async def get_by_project(self, project_id: int) -> list[Document]:
+        """Fetch all documents for the given project ID.
+
+        Args:
+            project_id: Project identifier.
+
+        Returns:
+            List of `Document` entities.
+
+        Raises:
+            DocumentRecordNotFoundError: If no documents are found for the project.
+        """
         query = select(DocumentModel).where(DocumentModel.project_id == project_id)
         result = await self.session.execute(query)
         orm_documents = result.scalars().all()
@@ -92,6 +138,14 @@ class DocumentRepositoryImpl(DocumentRepository):
         ]
     
     async def delete(self, document_id: int) -> None:
+        """Delete a document by ID.
+
+        Args:
+            document_id: Identifier of the document to delete.
+
+        Raises:
+            DocumentRecordNotFoundError: If the document does not exist.
+        """
         result = await self.session.get(DocumentModel, document_id)
         if result is None:
             raise DocumentRecordNotFoundError(f'Document {document_id} could not be found.') 

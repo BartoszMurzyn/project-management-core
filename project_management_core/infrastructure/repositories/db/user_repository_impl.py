@@ -1,9 +1,13 @@
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from project_management_core.domain.entities.user import User
 from project_management_core.domain.repositories.user_repository import UserRepository
-from sqlalchemy.ext.asyncio import AsyncSession
-from project_management_core.infrastructure.repositories.db.models.db_models import UserModel
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from project_management_core.infrastructure.repositories.db.models.db_models import (
+    UserModel,
+)
+
 
 class RepositoryError(Exception):
     pass
@@ -18,11 +22,29 @@ class UserDataIntegrityError(RepositoryError):
     """Constraints validation"""
 
 class UserRepositoryImpl(UserRepository):
+    """SQLAlchemy-based implementation of the `UserRepository` interface."""
     def __init__(self, session: AsyncSession) -> None:
+        """Initialize the repository with an async database session.
+
+        Args:
+            session: Async SQLAlchemy session.
+        """
         self.session = session
 
     
     async def create(self, user: User) -> User:
+        """Persist a new user and return the stored entity.
+
+        Args:
+            user: Domain user to persist.
+
+        Returns:
+            The created `User` entity with generated fields populated.
+
+        Raises:
+            UserDataIntegrityError: On integrity constraint violations.
+            UserRepositoryError: On general database errors.
+        """
         orm_user = UserModel(
             id = user.id,
             email = user.email,
@@ -45,6 +67,17 @@ class UserRepositoryImpl(UserRepository):
         )
 
     async def get_by_id(self, user_id: int) -> User | None:
+        """Fetch a user by ID.
+
+        Args:
+            user_id: Identifier of the user.
+
+        Returns:
+            The matching `User` entity.
+
+        Raises:
+            UserRecordNotFoundError: If no user exists with the given ID.
+        """
         result = await self.session.get(UserModel, user_id)
         if result is None:
             raise UserRecordNotFoundError(f"No user found with ID: {user_id}")
@@ -56,6 +89,17 @@ class UserRepositoryImpl(UserRepository):
         )
 
     async def get_by_email(self, email: str) -> User | None:
+        """Fetch a user by email.
+
+        Args:
+            email: Email address to search for.
+
+        Returns:
+            The matching `User` entity.
+
+        Raises:
+            UserRecordNotFoundError: If no user exists with the given email.
+        """
         query = select(UserModel).where(UserModel.email == email)
         result = await self.session.execute(query)
         orm_user = result.scalar_one_or_none()
@@ -69,6 +113,14 @@ class UserRepositoryImpl(UserRepository):
         )
 
     async def list_all(self) -> list[User] :
+        """List all users in the system.
+
+        Returns:
+            List of `User` entities.
+
+        Raises:
+            UserRecordNotFoundError: If the table is empty.
+        """
         query = select(UserModel)
         result = await self.session.execute(query)
         orm_users = result.scalars().all()
@@ -87,6 +139,18 @@ class UserRepositoryImpl(UserRepository):
 
 
     async def update(self, user: User) -> User | None:
+        """Update an existing user.
+
+        Args:
+            user: User with updated fields to persist.
+
+        Returns:
+            The updated `User` entity.
+
+        Raises:
+            UserRecordNotFoundError: If the user does not exist.
+            UserRepositoryError: On general database errors.
+        """
         result = await self.session.get(UserModel, user.id)
         if result is None:
             raise UserRecordNotFoundError(f"Could not find user: {user}")
@@ -106,6 +170,14 @@ class UserRepositoryImpl(UserRepository):
         )
 
     async def delete(self, user_id: int) -> None:
+        """Delete a user by ID.
+
+        Args:
+            user_id: Identifier of the user to delete.
+
+        Raises:
+            UserRecordNotFoundError: If the user does not exist.
+        """
         result = await self.session.get(UserModel, user_id)
         if result is None:
             raise UserRecordNotFoundError(f'User {user_id} could not be found.') 

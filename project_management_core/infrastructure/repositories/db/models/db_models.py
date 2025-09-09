@@ -1,7 +1,16 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Text, DateTime, UniqueConstraint
+from datetime import datetime, timezone
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 
 Base = declarative_base()
 
