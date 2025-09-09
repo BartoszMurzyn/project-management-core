@@ -105,7 +105,8 @@ class ProjectRepositoryImpl(ProjectRepository):
             id = result.id,
             name = result.name,
             description = result.description,
-            owner_id= result.owner_id
+            owner_id= result.owner_id,
+            participants=[u.id for u in result.participants]
         )
 
     async def delete(self, project_id: int) -> None:
