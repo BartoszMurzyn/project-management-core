@@ -143,5 +143,3 @@ class ProjectRepositoryImpl(ProjectRepository):
             await self.session.rollback()
             raise ProjectRepositoryError(f"Could not add user to project: {e}")
         
-        # Return the updated project with participants
-        return await self._get_project_with_participants(project_id)
