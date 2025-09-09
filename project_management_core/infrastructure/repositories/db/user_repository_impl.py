@@ -73,7 +73,7 @@ class UserRepositoryImpl(UserRepository):
         result = await self.session.execute(query)
         orm_users = result.scalars().all()
         if not orm_users:
-            raise UserRecordNotFoundError(f"No users found")
+            raise UserRecordNotFoundError("No users found")
         users = []
         for orm_user in orm_users:
             user = User(
