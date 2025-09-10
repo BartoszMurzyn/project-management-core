@@ -9,6 +9,7 @@ from project_management_core.domain.repositories.project_repository import (
     ProjectRepository,
 )
 from project_management_core.infrastructure.repositories.db.models.db_models import (
+    ProjectMember,
     ProjectModel,
 )
 
@@ -183,15 +184,15 @@ class ProjectRepositoryImpl(ProjectRepository):
             raise ProjectDataIntegrityError("Cannot add the owner as participant")
 
         existing = await self.session.execute(
-            select(ProjectModel)
-            .where(ProjectModel.project_id == project_id,
-                   ProjectModel.user_id == user_id)
+            select(ProjectMember)
+            .where(ProjectMember.project_id == project_id,
+                ProjectMember.user_id == user_id)
         )
         if existing.scalar_one_or_none():
             raise ProjectDataIntegrityError("User already a participant")
 
         self.session.add(
-            ProjectModel(user_id=user_id, project_id=project_id, role="participant")
+            ProjectMember(user_id=user_id, project_id=project_id, role="participant")
         )
         await self.session.commit()
         await self.session.refresh(project_model)  # upewnij się, że relacja members jest załadowana
