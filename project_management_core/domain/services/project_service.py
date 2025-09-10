@@ -1,4 +1,6 @@
 from project_management_core.domain.entities.project import Project
+from project_management_core.domain.entities.user import User
+
 from project_management_core.domain.repositories.project_repository import (
     ProjectRepository,
 )
@@ -142,9 +144,9 @@ class ProjectService:
         except RepositoryError as e:
             raise ProjectServiceError(str(e)) 
     
-    async def add_user_to_project(self, project_id: int, user_id: int, current_user_id: int) -> Project:
+    async def add_user_to_project(self, project_id: int, user_id: int, current_user_id: User) -> Project:
         project = await self.get_project(project_id)
-        if not project.has_access(current_user_id):
+        if not project.has_access(current_user_id.id):
             raise ProjectAccessDeniedError("Only project owner can invite participants")
         # Tutaj wywołujemy metodę z repozytorium
         return await self.project_repository.add_user_to_project(project_id, user_id)
