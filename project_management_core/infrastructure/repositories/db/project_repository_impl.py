@@ -180,7 +180,7 @@ class ProjectRepositoryImpl(ProjectRepository):
         if not project_model:
             raise ProjectNotFoundError("Project not found")
 
-        if user_id == project_model.id:
+        if user_id == project_model.owner_id:
             raise ProjectDataIntegrityError("Cannot add the owner as participant")
 
         existing = await self.session.execute(
@@ -195,12 +195,22 @@ class ProjectRepositoryImpl(ProjectRepository):
             ProjectMember(user_id=user_id, project_id=project_id, role="participant")
         )
         await self.session.commit()
-        await self.session.refresh(project_model)  # upewnij się, że relacja members jest załadowana
+        await self.session.refresh(project_model, ['members'])  # upewnij się, że relacja members jest załadowana
+        participants = []
+        try:
+                participants = [m.user_id for m in project_model.members]
+        except Exception as e:
+                print(f"Error accessing members: {e}")
+                # Fallback: query members separately
+                members_result = await self.session.execute(
+                    select(ProjectMember).where(ProjectMember.project_id == project_id)
+                )
+                participants = [m.user_id for m in members_result.scalars().all()]
 
         return Project(
-            id=project_model.id,
-            name=project_model.name,
-            description=project_model.description,
-            owner_id=project_model.owner_id,
-            participants=[m.user_id for m in project_model.members]
-        )
+                id=project_model.id,
+                name=project_model.name,
+                description=project_model.description,
+                owner_id=project_model.owner_id,
+                participants=participants
+            )
