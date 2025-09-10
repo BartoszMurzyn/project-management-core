@@ -5,6 +5,8 @@ from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy.orm import selectinload
+
 from project_management_core.domain.entities.project import Project
 from project_management_core.domain.repositories.project_repository import (
     ProjectRepository,
@@ -218,3 +220,16 @@ class ProjectRepositoryImpl(ProjectRepository):
                 owner_id=project_model.owner_id,
                 participants=participants
             )
+    
+
+    async def get_project_with_members(self, project_id: int) -> ProjectModel:
+        """Fetch a project with its participants eagerly loaded."""
+        result = await self.session.execute(
+            select(ProjectModel)
+            .options(selectinload(ProjectModel.members))  # eager load participants
+            .where(ProjectModel.id == project_id)
+        )
+        project_model = result.scalar_one_or_none()
+        if not project_model:
+            raise ProjectNotFoundError("Project not found")
+        return project_model
