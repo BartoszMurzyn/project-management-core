@@ -144,9 +144,8 @@ class ProjectService:
         except RepositoryError as e:
             raise ProjectServiceError(str(e)) 
     
-    async def add_user_to_project(self, project_id: int, user_id: int, current_user_id: User) -> Project:
+    async def add_user_to_project(self, project_id: int, user_id: int, current_user: User) -> Project:
         project = await self.get_project(project_id)
-        if not project.has_access(current_user_id.id):
+        if not project.has_access(current_user.id):  # Changed from current_user_id.id to current_user.id
             raise ProjectAccessDeniedError("Only project owner can invite participants")
-        # Tutaj wywołujemy metodę z repozytorium
         return await self.project_repository.add_user_to_project(project_id, user_id)
