@@ -9,6 +9,7 @@ from project_management_core.domain.repositories.project_repository import (
     ProjectRepository,
 )
 from project_management_core.infrastructure.repositories.db.models.db_models import (
+    ProjectMember,
     ProjectModel,
 )
 
@@ -172,3 +173,44 @@ class ProjectRepositoryImpl(ProjectRepository):
             await self.session.commit()
         except SQLAlchemyError:
             raise RepositoryError("Unable to delete project.")
+
+
+    async def add_user_to_project(self, project_id: int, user_id: int) -> Project:
+        project_model = await self.session.get(ProjectModel, project_id)
+        if not project_model:
+            raise ProjectNotFoundError("Project not found")
+
+        if user_id == project_model.owner_id:
+            raise ProjectDataIntegrityError("Cannot add the owner as participant")
+
+        existing = await self.session.execute(
+            select(ProjectMember)
+            .where(ProjectMember.project_id == project_id,
+                ProjectMember.user_id == user_id)
+        )
+        if existing.scalar_one_or_none():
+            raise ProjectDataIntegrityError("User already a participant")
+
+        self.session.add(
+            ProjectMember(user_id=user_id, project_id=project_id, role="participant")
+        )
+        await self.session.commit()
+        await self.session.refresh(project_model, ['members'])  # upewnij się, że relacja members jest załadowana
+        participants = []
+        try:
+                participants = [m.user_id for m in project_model.members]
+        except Exception as e:
+                print(f"Error accessing members: {e}")
+                # Fallback: query members separately
+                members_result = await self.session.execute(
+                    select(ProjectMember).where(ProjectMember.project_id == project_id)
+                )
+                participants = [m.user_id for m in members_result.scalars().all()]
+
+        return Project(
+                id=project_model.id,
+                name=project_model.name,
+                description=project_model.description,
+                owner_id=project_model.owner_id,
+                participants=participants
+            )

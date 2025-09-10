@@ -1,4 +1,6 @@
 from project_management_core.domain.entities.project import Project
+from project_management_core.domain.entities.user import User
+
 from project_management_core.domain.repositories.project_repository import (
     ProjectRepository,
 )
@@ -141,3 +143,9 @@ class ProjectService:
             await self.project_repository.delete(project_id)
         except RepositoryError as e:
             raise ProjectServiceError(str(e)) 
+    
+    async def add_user_to_project(self, project_id: int, user_id: int, current_user: User) -> Project:
+        project = await self.get_project(project_id)
+        if not project.has_access(current_user.id):
+            raise ProjectAccessDeniedError("Only project owner can invite participants")
+        return await self.project_repository.add_user_to_project(project_id, user_id)
