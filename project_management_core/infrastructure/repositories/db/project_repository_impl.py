@@ -1,6 +1,7 @@
+from operator import or_
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,7 @@ from project_management_core.domain.repositories.project_repository import (
 from project_management_core.infrastructure.repositories.db.models.db_models import (
     ProjectMember,
     ProjectModel,
+    UserModel,
 )
 
 
@@ -111,7 +113,9 @@ class ProjectRepositoryImpl(ProjectRepository):
         Raises:
             ProjectNotFoundError: If no projects are found for the user.
         """
-        project_query = select(ProjectModel).where(ProjectModel.owner_id == user_id)
+        project_query = select(ProjectModel).where(
+            or_(ProjectModel.owner_id == user_id,
+            ProjectModel.members.any(UserModel.id == user_id)))
         result = await self.session.execute(project_query)
         rows = result.scalars().all()
         if not rows:
