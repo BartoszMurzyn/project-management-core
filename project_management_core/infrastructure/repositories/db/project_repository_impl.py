@@ -180,7 +180,7 @@ class ProjectRepositoryImpl(ProjectRepository):
         if not project_model:
             raise ProjectNotFoundError("Project not found")
 
-        if user_id == project_model.owner_id:
+        if user_id == project_model.id:
             raise ProjectDataIntegrityError("Cannot add the owner as participant")
 
         existing = await self.session.execute(
