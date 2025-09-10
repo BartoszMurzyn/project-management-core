@@ -42,7 +42,7 @@ class ProjectMember(Base):
     joined_at = Column(DateTime, default=datetime.now().replace(tzinfo=None))
     __table_args__ = (UniqueConstraint('user_id', 'project_id'),)
     user = relationship("UserModel")
-    project = relationship("ProjectModel", back_populates='members')
+    project = relationship("ProjectModel", back_populates='members', lazy='selectin')
 
 class DocumentModel(Base):
     __tablename__ = 'documents'

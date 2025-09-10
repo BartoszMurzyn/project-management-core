@@ -141,3 +141,10 @@ class ProjectService:
             await self.project_repository.delete(project_id)
         except RepositoryError as e:
             raise ProjectServiceError(str(e)) 
+    
+    async def add_user_to_project(self, project_id: int, user_id: int, current_user_id: int) -> Project:
+        project = await self.get_project(project_id)
+        if not project.has_access(current_user_id):
+            raise ProjectAccessDeniedError("Only project owner can invite participants")
+        # Tutaj wywołujemy metodę z repozytorium
+        return await self.project_repository.add_user_to_project(project_id, user_id)
