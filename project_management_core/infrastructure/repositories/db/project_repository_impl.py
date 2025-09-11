@@ -33,7 +33,7 @@ class ProjectDataIntegrityError(RepositoryError):
 
 class ProjectRepositoryImpl(ProjectRepository):
     """SQLAlchemy-based implementation of the `ProjectRepository` interface."""
-    def __init__(self, session: AsyncSession) -> None: #Czy tutaj mogę np przekazać get_async_session z connection.py?
+    def __init__(self, session: AsyncSession) -> None: 
         """Initialize the repository with an async database session.
 
         Args:
@@ -201,13 +201,12 @@ class ProjectRepositoryImpl(ProjectRepository):
             ProjectMember(user_id=user_id, project_id=project_id, role="participant")
         )
         await self.session.commit()
-        await self.session.refresh(project_model, ['members'])  # upewnij się, że relacja members jest załadowana
+        await self.session.refresh(project_model, ['members'])  
         participants = []
         try:
                 participants = [m.user_id for m in project_model.members]
         except Exception as e:
                 print(f"Error accessing members: {e}")
-                # Fallback: query members separately
                 members_result = await self.session.execute(
                     select(ProjectMember).where(ProjectMember.project_id == project_id)
                 )
@@ -226,7 +225,7 @@ class ProjectRepositoryImpl(ProjectRepository):
         """Fetch a project with its participants eagerly loaded."""
         result = await self.session.execute(
             select(ProjectModel)
-            .options(selectinload(ProjectModel.members))  # eager load participants
+            .options(selectinload(ProjectModel.members)) 
             .where(ProjectModel.id == project_id)
         )
         project_model = result.scalar_one_or_none()
