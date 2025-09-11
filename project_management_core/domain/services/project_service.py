@@ -149,3 +149,14 @@ class ProjectService:
         if not project.has_access(current_user.id):
             raise ProjectAccessDeniedError("Only project owner can invite participants")
         return await self.project_repository.add_user_to_project(project_id, user_id)
+    
+    async def get_project(self, project_id: int) -> Project:
+        """Retrieve a project with participants loaded."""
+        project_model = await self.project_repository.get_project_with_members(project_id)
+        return Project(
+            id=project_model.id,
+            name=project_model.name,
+            description=project_model.description,
+            owner_id=project_model.owner_id,
+            participants=[m.user_id for m in project_model.members]
+        )

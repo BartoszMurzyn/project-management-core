@@ -1,8 +1,11 @@
+from operator import or_
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from sqlalchemy.orm import selectinload
 
 from project_management_core.domain.entities.project import Project
 from project_management_core.domain.repositories.project_repository import (
@@ -11,6 +14,7 @@ from project_management_core.domain.repositories.project_repository import (
 from project_management_core.infrastructure.repositories.db.models.db_models import (
     ProjectMember,
     ProjectModel,
+    UserModel,
 )
 
 
@@ -29,7 +33,7 @@ class ProjectDataIntegrityError(RepositoryError):
 
 class ProjectRepositoryImpl(ProjectRepository):
     """SQLAlchemy-based implementation of the `ProjectRepository` interface."""
-    def __init__(self, session: AsyncSession) -> None: #Czy tutaj mogę np przekazać get_async_session z connection.py?
+    def __init__(self, session: AsyncSession) -> None: 
         """Initialize the repository with an async database session.
 
         Args:
@@ -111,7 +115,9 @@ class ProjectRepositoryImpl(ProjectRepository):
         Raises:
             ProjectNotFoundError: If no projects are found for the user.
         """
-        project_query = select(ProjectModel).where(ProjectModel.owner_id == user_id)
+        project_query = select(ProjectModel).where(
+            or_(ProjectModel.owner_id == user_id,
+            ProjectModel.members.any(UserModel.id == user_id)))
         result = await self.session.execute(project_query)
         rows = result.scalars().all()
         if not rows:
@@ -195,13 +201,12 @@ class ProjectRepositoryImpl(ProjectRepository):
             ProjectMember(user_id=user_id, project_id=project_id, role="participant")
         )
         await self.session.commit()
-        await self.session.refresh(project_model, ['members'])  # upewnij się, że relacja members jest załadowana
+        await self.session.refresh(project_model, ['members'])  
         participants = []
         try:
                 participants = [m.user_id for m in project_model.members]
         except Exception as e:
                 print(f"Error accessing members: {e}")
-                # Fallback: query members separately
                 members_result = await self.session.execute(
                     select(ProjectMember).where(ProjectMember.project_id == project_id)
                 )
@@ -214,3 +219,16 @@ class ProjectRepositoryImpl(ProjectRepository):
                 owner_id=project_model.owner_id,
                 participants=participants
             )
+    
+
+    async def get_project_with_members(self, project_id: int) -> ProjectModel:
+        """Fetch a project with its participants eagerly loaded."""
+        result = await self.session.execute(
+            select(ProjectModel)
+            .options(selectinload(ProjectModel.members)) 
+            .where(ProjectModel.id == project_id)
+        )
+        project_model = result.scalar_one_or_none()
+        if not project_model:
+            raise ProjectNotFoundError("Project not found")
+        return project_model
