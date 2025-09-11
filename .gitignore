@@ -1,17 +1,31 @@
-# Python bytecode and cache files
+# =========================
+# Python bytecode / cache
+# =========================
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environments and environment configurations
-env/
-env.sh
+# =========================
+# Virtual environments
+# =========================
 .venv/
+venv/
 ENV/
+env/
 env.bak/
 venv.bak/
 
+# =========================
+# Environment variables
+# =========================
+.env
+env.sh
+.env.local
+.env.*.local
+
+# =========================
 # Distribution / packaging
+# =========================
 .Python
 build/
 dist/
@@ -26,45 +40,58 @@ sdist/
 .installed.cfg
 *.egg
 
-# Installer logs
+# =========================
+# Installer / pip logs
+# =========================
 pip-log.txt
 pip-delete-this-directory.txt
 
-# IDE/editor folders or files
+# =========================
+# IDE / editor folders
+# =========================
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 
-# macOS
+# =========================
+# macOS / system files
+# =========================
 .DS_Store
 .AppleDouble
 .LSOverride
-
-# Thumbnails
 ._*
 
-# Logs and databases
+# =========================
+# Logs / databases
+# =========================
 *.log
 *.sqlite3
 *.db
+postgres_data/
 
+# =========================
 # Testing / coverage
+# =========================
 .coverage
 .coverage.*
 *.cover
 *.py,cover
 htmlcov/
-pytest_cache/
+.pytest_cache/
 .nox/
 .tox/
 
+# =========================
 # Mypy / static analysis caches
+# =========================
 .mypy_cache/
 .dmypy.json
 dmypy.json
 
+# =========================
 # Temporary / backup / swap files
+# =========================
 *.tmp
 *.swp
 *.swn
@@ -74,8 +101,16 @@ dmypy.json
 *.orig
 *.backup
 
-# Node/JS, if accidentally added
+# =========================
+# Node / JavaScript (if present)
+# =========================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# =========================
+# Docker / Compose artifacts
+# =========================
+*.env.*.local
+docker-compose.override.yml
